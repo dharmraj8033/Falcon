@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Falcon AI - GitHub Deployment Script
+# Run this script after creating your GitHub repository
+
+echo "🦅 Falcon AI - GitHub Deployment Setup"
+echo "======================================"
+
+# Check if Git is configured
+if ! git config --global user.name > /dev/null; then
+    echo "⚠️  Git user not configured. Please run:"
+    echo "   git config --global user.name 'Your Name'"
+    echo "   git config --global user.email 'your.email@example.com'"
+    echo ""
+fi
+
+echo "📝 Instructions to deploy Falcon AI to GitHub:"
+echo ""
+echo "1. Create a new repository on GitHub:"
+echo "   - Go to https://github.com/new"
+echo "   - Repository name: falcon-ai"
+echo "   - Description: 'Falcon AI - Advanced Vulnerability Scanner with AI Engine'"
+echo "   - Make it public or private (your choice)"
+echo "   - Don't initialize with README (we already have one)"
+echo ""
+echo "2. After creating the repository, run these commands:"
+echo "   git remote add origin https://github.com/YOUR_USERNAME/falcon-ai.git"
+echo "   git branch -M main"
+echo "   git push -u origin main"
+echo ""
+echo "3. Or if you want to use SSH (recommended for security):"
+echo "   git remote add origin git@github.com:YOUR_USERNAME/falcon-ai.git"
+echo "   git branch -M main" 
+echo "   git push -u origin main"
+echo ""
+echo "🔗 Replace 'YOUR_USERNAME' with your actual GitHub username"
+echo ""
+echo "🚀 Once pushed, you can clone it on Kali Linux with:"
+echo "   git clone https://github.com/YOUR_USERNAME/falcon-ai.git"
+echo "   cd falcon-ai"
+echo "   chmod +x install.sh"
+echo "   ./install.sh"
+echo ""
+echo "🐧 For Kali Linux quick setup:"
+echo "   # Install dependencies"
+echo "   sudo apt update"
+echo "   sudo apt install python3-pip python3-venv git -y"
+echo ""
+echo "   # Install external tools"
+echo "   sudo apt install subfinder whatweb arjun katana -y"
+echo ""
+echo "   # Or use Go to install latest versions:"
+echo "   go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+echo "   go install -v github.com/projectdiscovery/katana/cmd/katana@latest"
+echo ""
+echo "✅ Repository ready for GitHub deployment!"
