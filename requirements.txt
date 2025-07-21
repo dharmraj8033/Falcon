@@ -1,52 +1,56 @@
 # Core dependencies
-aiohttp>=3.8.0
-asyncio-throttle>=1.0.2
-colorama>=0.4.4
-PyYAML>=6.0
+aiohttp
+asyncio-throttle
+colorama
+rich
+click
+pydantic
+requests
+dnspython
+beautifulsoup4
+lxml
+pyyaml
+tldextract
+urllib3
 
-# Optional ML dependencies (for AI features)
-numpy>=1.21.0
-scikit-learn>=1.0.0
-transformers>=4.20.0
-torch>=1.12.0
-
-# Web scraping and parsing
-beautifulsoup4>=4.11.0
-lxml>=4.9.0
-requests>=2.28.0
-urllib3>=1.26.0
-
-# Report generation
-jinja2>=3.1.0
-markdown>=3.4.0
-weasyprint>=57.0  # For PDF generation
+# AI and ML dependencies
+torch
+transformers
+scikit-learn
+numpy
+pandas
+joblib
 
 # Security and crypto
-cryptography>=37.0.0
-python-jose>=3.3.0
+cryptography
+python-jose
 
-# Database (optional)
-sqlite3  # Built-in
-sqlalchemy>=1.4.0
+# Database and storage
+diskcache
 
-# Development and testing
-pytest>=7.1.0
-pytest-asyncio>=0.19.0
-black>=22.0.0
-flake8>=5.0.0
+# Networking and web
+httpx
+websockets
+pyppeteer
 
-# Networking and DNS
-dnspython>=2.2.0
-aiodns>=3.0.0
+# CLI and terminal
+typer
+prompt-toolkit
+textual
 
-# JSON and data processing
-orjson>=3.7.0
-python-dotenv>=0.20.0
+# Output and reporting
+jinja2
+weasyprint
+plotly
+fpdf2
 
-# Progress and logging
-tqdm>=4.64.0
-rich>=12.5.0
+# Development and testing (optional)
+pytest
+pytest-asyncio
+black
+flake8
+mypy
 
-# HTTP client enhancements
-httpx>=0.23.0
-user-agent>=0.1.9
+# Tool integrations
+python-nmap
+python-whois

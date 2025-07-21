@@ -1,184 +1,180 @@
 """
-Core Configuration Management
+Falcon Configuration Management
+Handles configuration loading, validation, and management
 """
 
 import os
 import json
+import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, Optional
+from rich.console import Console
 
-# Try to import yaml, fallback to json if not available
-try:
-    import yaml
-    YAML_AVAILABLE = True
-except ImportError:
-    YAML_AVAILABLE = False
+console = Console()
 
-class Config:
-    """Configuration manager for Falcon"""
-    
-    DEFAULT_CONFIG = {
-        'general': {
-            'user_agent': 'Falcon-AI/1.0 (Security Scanner)',
-            'timeout': 30,
-            'retries': 3,
-            'delay': 0,
-            'threads': 10,
-            'max_redirects': 5,
-            'verify_ssl': False
-        },
-        'scanning': {
-            'default_modules': ['xss', 'sqli', 'ssrf', 'rce'],
-            'crawl_depth': 3,
-            'forms_detection': True,
-            'js_analysis': True,
-            'parameter_discovery': True,
-            'autopilot': False,
-            'aggressive_mode': False
-        },
-        'ai_engine': {
-            'model_path': 'data/models/',
-            'confidence_threshold': 0.7,
-            'learning_rate': 0.001,
-            'batch_size': 32,
-            'max_sequence_length': 512,
-            'enable_training': True,
-            'auto_update': True
-        },
-        'output': {
-            'default_format': 'txt',
-            'color_output': True,
-            'verbose_level': 1,
-            'save_raw_responses': False,
-            'report_template': 'detailed'
-        },
-        'network': {
-            'proxy': None,
-            'proxy_auth': None,
-            'bind_address': None,
-            'source_port': None,
-            'interface': None
-        },
-        'payloads': {
-            'xss_payloads': 'data/payloads/xss.txt',
-            'sqli_payloads': 'data/payloads/sqli.txt',
-            'ssrf_payloads': 'data/payloads/ssrf.txt',
-            'rce_payloads': 'data/payloads/rce.txt',
-            'custom_payloads': 'data/payloads/custom/',
-            'encoding_methods': ['url', 'html', 'base64', 'unicode']
-        },
-        'wordlists': {
-            'parameters': 'data/wordlists/parameters.txt',
-            'directories': 'data/wordlists/directories.txt',
-            'subdomains': 'data/wordlists/subdomains.txt',
-            'files': 'data/wordlists/files.txt'
-        },
-        'tools': {
-            'subfinder': {
-                'enabled': True,
-                'path': '/usr/local/bin/subfinder',
-                'timeout': 60,
-                'sources': ['crtsh', 'virustotal', 'sublist3r']
-            },
-            'whatweb': {
-                'enabled': True,
-                'path': '/usr/local/bin/whatweb',
-                'aggression': 3
-            },
-            'arjun': {
-                'enabled': True,
-                'path': '/usr/local/bin/arjun',
-                'threads': 5
-            },
-            'katana': {
-                'enabled': True,
-                'path': '/usr/local/bin/katana',
-                'depth': 3
-            }
-        },
-        'database': {
-            'engine': 'sqlite',
-            'path': 'data/falcon.db',
-            'host': 'localhost',
-            'port': 5432,
-            'name': 'falcon',
-            'user': 'falcon',
-            'password': ''
-        },
-        'logging': {
-            'level': 'INFO',
-            'file': 'logs/falcon.log',
-            'max_size': '10MB',
-            'backup_count': 5,
-            'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        }
-    }
+class FalconConfig:
+    """Falcon configuration manager"""
     
     def __init__(self, config_path: Optional[str] = None):
         self.config_path = config_path or self._get_default_config_path()
-        self.config = self.DEFAULT_CONFIG.copy()
+        self.config_data = {}
         self.load_config()
     
     def _get_default_config_path(self) -> str:
-        """Get the default configuration file path"""
-        # Try various locations for config file
-        possible_paths = [
-            os.path.expanduser('~/.falcon/config.yaml'),
-            os.path.expanduser('~/.config/falcon/config.yaml'),
-            './config.yaml',
-            './falcon.yaml'
-        ]
-        
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path
-        
-        # Return the first path as default
-        return possible_paths[0]
+        """Get default configuration file path"""
+        home_dir = Path.home()
+        falcon_dir = home_dir / ".falcon"
+        falcon_dir.mkdir(exist_ok=True)
+        return str(falcon_dir / "config.yaml")
     
     def load_config(self):
         """Load configuration from file"""
-        if not os.path.exists(self.config_path):
-            self.save_config()  # Create default config
-            return
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    if self.config_path.endswith('.yaml') or self.config_path.endswith('.yml'):
+                        self.config_data = yaml.safe_load(f) or {}
+                    else:
+                        self.config_data = json.load(f)
+            except Exception as e:
+                console.print(f"[yellow]Warning: Could not load config: {e}[/yellow]")
+                self.config_data = {}
         
-        try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                if self.config_path.endswith('.json'):
-                    file_config = json.load(f)
-                elif YAML_AVAILABLE:
-                    file_config = yaml.safe_load(f)
-                else:
-                    # Fallback to JSON if YAML not available
-                    file_config = json.load(f)
-            
-            # Merge with default config
-            self._deep_merge(self.config, file_config)
-            
-        except Exception as e:
-            print(f"Warning: Failed to load config from {self.config_path}: {e}")
-            print("Using default configuration")
+        # Merge with default configuration
+        self.config_data = {**self._get_default_config(), **self.config_data}
     
-    def save_config(self):
-        """Save current configuration to file"""
-        os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-        
-        try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                if self.config_path.endswith('.json'):
-                    json.dump(self.config, f, indent=2)
-                elif YAML_AVAILABLE:
-                    yaml.dump(self.config, f, default_flow_style=False, indent=2)
-                else:
-                    # Fallback to JSON if YAML not available
-                    json.dump(self.config, f, indent=2)
-        except Exception as e:
-            print(f"Warning: Failed to save config to {self.config_path}: {e}")
+    def _get_default_config(self) -> Dict[str, Any]:
+        """Get default configuration values"""
+        return {
+            'version': '1.0.0',
+            
+            # General settings
+            'general': {
+                'threads': 20,
+                'timeout': 30,
+                'user_agent': 'Falcon-Scanner/1.0 (AI-Enhanced Security Scanner)',
+                'rate_limit': 10,
+                'max_retries': 3,
+                'output_dir': './output',
+                'session_dir': './sessions'
+            },
+            
+            # AI engine settings
+            'ai': {
+                'enabled': True,
+                'model_path': './ai_engine/models',
+                'confidence_threshold': 0.7,
+                'learning_mode': True,
+                'auto_update': True,
+                'explain_mode': False
+            },
+            
+            # Scanning modules
+            'modules': {
+                'subfinder': {
+                    'enabled': True,
+                    'sources': ['crtsh', 'virustotal', 'threatcrowd', 'dnsdumpster'],
+                    'timeout': 60
+                },
+                'tech_detection': {
+                    'enabled': True,
+                    'detailed': False,
+                    'cve_check': True
+                },
+                'crawling': {
+                    'enabled': True,
+                    'max_depth': 3,
+                    'max_pages': 1000,
+                    'include_static': False
+                },
+                'param_discovery': {
+                    'enabled': True,
+                    'wordlist': './data/wordlists/params.txt',
+                    'methods': ['GET', 'POST']
+                },
+                'vulnerability_scanner': {
+                    'enabled': True,
+                    'checks': ['xss', 'sqli', 'csrf', 'rce', 'ssrf', 'idor', 'open_redirect'],
+                    'payload_file': './data/payloads/all.json'
+                }
+            },
+            
+            # Output settings
+            'output': {
+                'format': 'json',
+                'include_raw': False,
+                'screenshots': False,
+                'compress': True
+            },
+            
+            # Logging settings
+            'logging': {
+                'level': 'INFO',
+                'file': './logs/falcon.log',
+                'max_size': '100MB',
+                'backup_count': 5
+            },
+            
+            # CLI settings
+            'cli': {
+                'show_banner': True,
+                'colored_output': True,
+                'progress_bars': True,
+                'auto_save_session': True
+            },
+            
+            # Network settings
+            'network': {
+                'proxy': None,
+                'headers': {},
+                'cookies': {},
+                'verify_ssl': True,
+                'follow_redirects': True,
+                'max_redirects': 10
+            },
+            
+            # Security settings
+            'security': {
+                'sandbox_mode': False,
+                'max_request_size': '10MB',
+                'blocked_extensions': ['.exe', '.zip', '.rar', '.tar'],
+                'allowed_domains': [],
+                'blocked_domains': []
+            },
+            
+            # Profiles
+            'profiles': {
+                'webapp': {
+                    'modules': ['tech', 'crawl', 'params', 'vulns'],
+                    'depth': 3,
+                    'ai_mode': 'smart',
+                    'intensity': 'medium'
+                },
+                'api': {
+                    'modules': ['tech', 'params', 'vulns'],
+                    'depth': 1,
+                    'ai_mode': 'aggressive',
+                    'intensity': 'high'
+                },
+                'bug-bounty': {
+                    'modules': ['recon', 'tech', 'crawl', 'params', 'vulns'],
+                    'depth': 4,
+                    'ai_mode': 'aggressive',
+                    'intensity': 'high'
+                },
+                'pentest': {
+                    'modules': ['all'],
+                    'depth': 5,
+                    'ai_mode': 'aggressive',
+                    'intensity': 'maximum'
+                }
+            }
+        }
     
-    def get(self, key: str, default=None) -> Any:
+    def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value using dot notation"""
         keys = key.split('.')
-        value = self.config
+        value = self.config_data
         
         for k in keys:
             if isinstance(value, dict) and k in value:
@@ -191,100 +187,111 @@ class Config:
     def set(self, key: str, value: Any):
         """Set configuration value using dot notation"""
         keys = key.split('.')
-        config = self.config
+        current = self.config_data
         
         for k in keys[:-1]:
-            if k not in config:
-                config[k] = {}
-            config = config[k]
+            if k not in current:
+                current[k] = {}
+            current = current[k]
         
-        config[keys[-1]] = value
+        current[keys[-1]] = value
     
-    def update(self, updates: Dict[str, Any]):
-        """Update configuration with a dictionary"""
-        self._deep_merge(self.config, updates)
+    def save(self):
+        """Save configuration to file"""
+        try:
+            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+            
+            with open(self.config_path, 'w', encoding='utf-8') as f:
+                if self.config_path.endswith('.yaml') or self.config_path.endswith('.yml'):
+                    yaml.dump(self.config_data, f, default_flow_style=False, indent=2)
+                else:
+                    json.dump(self.config_data, f, indent=2, ensure_ascii=False)
+            
+            console.print(f"[green]✅ Configuration saved to {self.config_path}[/green]")
+        except Exception as e:
+            console.print(f"[red]❌ Failed to save configuration: {e}[/red]")
     
     def reset(self):
         """Reset configuration to defaults"""
-        self.config = self.DEFAULT_CONFIG.copy()
-        self.save_config()
+        self.config_data = self._get_default_config()
+        self.save()
     
-    def _deep_merge(self, base: Dict, update: Dict):
-        """Deep merge two dictionaries"""
-        for key, value in update.items():
-            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-                self._deep_merge(base[key], value)
-            else:
-                base[key] = value
-    
-    def validate(self) -> List[str]:
-        """Validate configuration and return list of errors"""
-        errors = []
+    def show(self):
+        """Display current configuration"""
+        console.print("[cyan]📋 Current Falcon Configuration:[/cyan]")
         
-        # Check required paths exist
-        model_path = self.get('ai_engine.model_path')
-        if model_path and not os.path.exists(model_path):
-            errors.append(f"AI model path does not exist: {model_path}")
+        def print_dict(d: dict, indent: int = 0):
+            for key, value in d.items():
+                spaces = "  " * indent
+                if isinstance(value, dict):
+                    console.print(f"[yellow]{spaces}{key}:[/yellow]")
+                    print_dict(value, indent + 1)
+                else:
+                    console.print(f"[cyan]{spaces}{key}:[/cyan] [white]{value}[/white]")
         
-        # Check tool paths
-        for tool_name, tool_config in self.get('tools', {}).items():
-            if tool_config.get('enabled') and tool_config.get('path'):
-                if not os.path.exists(tool_config['path']):
-                    errors.append(f"{tool_name} tool not found at: {tool_config['path']}")
+        print_dict(self.config_data)
+    
+    def validate(self) -> bool:
+        """Validate configuration"""
+        required_sections = ['general', 'ai', 'modules', 'output', 'logging']
         
-        # Check wordlist files
-        for wordlist_name, wordlist_path in self.get('wordlists', {}).items():
-            if wordlist_path and not os.path.exists(wordlist_path):
-                errors.append(f"Wordlist not found: {wordlist_path}")
+        for section in required_sections:
+            if section not in self.config_data:
+                console.print(f"[red]❌ Missing required section: {section}[/red]")
+                return False
         
-        # Check payload files
-        for payload_name, payload_path in self.get('payloads', {}).items():
-            if isinstance(payload_path, str) and payload_path.endswith('.txt'):
-                if not os.path.exists(payload_path):
-                    errors.append(f"Payload file not found: {payload_path}")
+        # Validate AI settings
+        ai_confidence = self.get('ai.confidence_threshold', 0.7)
+        if not 0.0 <= ai_confidence <= 1.0:
+            console.print("[red]❌ AI confidence threshold must be between 0.0 and 1.0[/red]")
+            return False
         
-        # Validate numeric ranges
-        timeout = self.get('general.timeout')
-        if timeout and (timeout < 1 or timeout > 300):
-            errors.append("Timeout must be between 1 and 300 seconds")
+        # Validate thread count
+        threads = self.get('general.threads', 20)
+        if not isinstance(threads, int) or threads <= 0:
+            console.print("[red]❌ Thread count must be a positive integer[/red]")
+            return False
         
-        threads = self.get('general.threads')
-        if threads and (threads < 1 or threads > 100):
-            errors.append("Threads must be between 1 and 100")
+        return True
+    
+    def get_profile(self, profile_name: str) -> Dict[str, Any]:
+        """Get configuration for a specific profile"""
+        profile = self.get(f'profiles.{profile_name}', {})
+        if not profile:
+            console.print(f"[yellow]⚠️  Profile '{profile_name}' not found, using defaults[/yellow]")
+            return {}
         
-        return errors
+        return profile
     
-    def get_user_agent(self) -> str:
-        """Get configured user agent string"""
-        return self.get('general.user_agent', self.DEFAULT_CONFIG['general']['user_agent'])
+    def update_from_args(self, args):
+        """Update configuration from command line arguments"""
+        if hasattr(args, 'threads') and args.threads:
+            self.set('general.threads', args.threads)
+        
+        if hasattr(args, 'timeout') and args.timeout:
+            self.set('general.timeout', args.timeout)
+        
+        if hasattr(args, 'user_agent') and args.user_agent:
+            self.set('general.user_agent', args.user_agent)
+        
+        if hasattr(args, 'proxy') and args.proxy:
+            self.set('network.proxy', args.proxy)
+        
+        if hasattr(args, 'verbose') and args.verbose:
+            self.set('logging.level', 'INFO')
+        
+        if hasattr(args, 'debug') and args.debug:
+            self.set('logging.level', 'DEBUG')
     
-    def get_timeout(self) -> int:
-        """Get configured timeout"""
-        return self.get('general.timeout', self.DEFAULT_CONFIG['general']['timeout'])
-    
-    def get_threads(self) -> int:
-        """Get configured thread count"""
-        return self.get('general.threads', self.DEFAULT_CONFIG['general']['threads'])
-    
-    def is_tool_enabled(self, tool_name: str) -> bool:
-        """Check if a tool is enabled"""
-        return self.get(f'tools.{tool_name}.enabled', False)
-    
-    def get_tool_path(self, tool_name: str) -> Optional[str]:
-        """Get path to a tool"""
-        return self.get(f'tools.{tool_name}.path')
-    
-    def get_wordlist_path(self, wordlist_type: str) -> Optional[str]:
-        """Get path to a wordlist"""
-        return self.get(f'wordlists.{wordlist_type}')
-    
-    def get_payload_path(self, payload_type: str) -> Optional[str]:
-        """Get path to payload file"""
-        return self.get(f'payloads.{payload_type}')
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Return configuration as dictionary"""
-        return self.config.copy()
-
-# Global configuration instance
-config = Config()
+    def create_directories(self):
+        """Create necessary directories"""
+        dirs_to_create = [
+            self.get('general.output_dir'),
+            self.get('general.session_dir'),
+            self.get('ai.model_path'),
+            os.path.dirname(self.get('logging.file'))
+        ]
+        
+        for dir_path in dirs_to_create:
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)

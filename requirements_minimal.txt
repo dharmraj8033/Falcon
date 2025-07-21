@@ -1,0 +1,16 @@
+# Essential core dependencies only
+aiohttp
+colorama
+rich
+click
+requests
+beautifulsoup4
+pyyaml
+urllib3
+
+# Basic AI/ML (optional - can be installed separately if needed)
+numpy
+pandas
+
+# Security essentials
+cryptography

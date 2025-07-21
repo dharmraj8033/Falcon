@@ -1,182 +1,379 @@
 """
-CLI Argument Parser
+Falcon CLI Parser
+Handles command-line argument parsing and routing
 """
 
 import argparse
 import sys
-from pathlib import Path
+from typing import List, Optional
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from core.scanner import FalconScanner
+from core.banner import show_banner
+from core.config import FalconConfig
+from ai_engine.manager import AIManager
 
-def create_parser():
-    """Create and configure the argument parser"""
-    parser = argparse.ArgumentParser(
-        prog='falcon',
-        description='Falcon AI - Advanced AI-Enhanced Vulnerability Scanner',
-        epilog='Example: falcon scan --url https://target.com --autopilot',
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
-    # Global arguments
-    parser.add_argument('--version', action='version', version='Falcon AI v1.0.0')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
-    parser.add_argument('--config', help='Path to configuration file')
-    
-    # Output options
-    output_group = parser.add_argument_group('Output Options')
-    output_group.add_argument('--output', '-o', choices=['json', 'html', 'pdf', 'txt'], 
-                             default='txt', help='Output format (default: txt)')
-    output_group.add_argument('--output-file', help='Output file path')
-    output_group.add_argument('--quiet', '-q', action='store_true', help='Suppress output')
-    
-    # Create subparsers for different commands
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
-    # Scan command
-    scan_parser = subparsers.add_parser('scan', help='Perform vulnerability scan')
-    scan_parser.add_argument('--url', '-u', required=True, help='Target URL to scan')
-    scan_parser.add_argument('--modules', '-m', nargs='+', 
-                           choices=['xss', 'sqli', 'ssrf', 'rce', 'csrf', 'idor', 'redirect', 'all'],
-                           default=['all'], help='Vulnerability modules to run')
-    scan_parser.add_argument('--autopilot', action='store_true', 
-                           help='Enable AI autopilot mode')
-    scan_parser.add_argument('--explain', action='store_true', 
-                           help='Enable AI explanation mode')
-    scan_parser.add_argument('--depth', type=int, default=3, 
-                           help='Crawling depth (default: 3)')
-    scan_parser.add_argument('--threads', type=int, default=10, 
-                           help='Number of threads (default: 10)')
-    scan_parser.add_argument('--delay', type=float, default=0, 
-                           help='Delay between requests in seconds')
-    scan_parser.add_argument('--timeout', type=int, default=30, 
-                           help='Request timeout in seconds')
-    scan_parser.add_argument('--user-agent', help='Custom User-Agent string')
-    scan_parser.add_argument('--headers', nargs='+', 
-                           help='Custom headers (format: "Header: Value")')
-    scan_parser.add_argument('--cookies', help='Cookies string')
-    scan_parser.add_argument('--proxy', help='Proxy URL (http://host:port)')
-    
-    # Fuzz command
-    fuzz_parser = subparsers.add_parser('fuzz', help='Perform parameter fuzzing')
-    fuzz_parser.add_argument('--url', '-u', required=True, help='Target URL')
-    fuzz_parser.add_argument('--wordlist', '-w', help='Custom wordlist file')
-    fuzz_parser.add_argument('--parameters', '-p', nargs='+', 
-                           help='Specific parameters to fuzz')
-    fuzz_parser.add_argument('--method', choices=['GET', 'POST', 'PUT', 'DELETE'], 
-                           default='GET', help='HTTP method')
-    fuzz_parser.add_argument('--data', help='POST data')
-    fuzz_parser.add_argument('--encode', choices=['url', 'html', 'base64'], 
-                           help='Payload encoding')
-    
-    # Tech detection command
-    tech_parser = subparsers.add_parser('tech', help='Detect technology stack')
-    tech_parser.add_argument('--url', '-u', required=True, help='Target URL')
-    tech_parser.add_argument('--aggressive', action='store_true', 
-                           help='Enable aggressive detection')
-    tech_parser.add_argument('--fingerprint', action='store_true', 
-                           help='Detailed fingerprinting')
-    
-    # Update command
-    update_parser = subparsers.add_parser('update', help='Update components')
-    update_parser.add_argument('--ai-data', action='store_true', 
-                             help='Update AI training data')
-    update_parser.add_argument('--payloads', action='store_true', 
-                             help='Update payload databases')
-    update_parser.add_argument('--tools', action='store_true', 
-                             help='Update integrated tools')
-    update_parser.add_argument('--all', action='store_true', 
-                             help='Update everything')
-    
-    # AI training command
-    ai_parser = subparsers.add_parser('ai-train', help='Train AI models')
-    ai_parser.add_argument('--sources', nargs='+', 
-                         choices=['bugbounty', 'cve', 'github', 'custom'],
-                         default=['bugbounty', 'cve'], 
-                         help='Training data sources')
-    ai_parser.add_argument('--epochs', type=int, default=5, 
-                         help='Training epochs')
-    ai_parser.add_argument('--data-path', help='Path to custom training data')
-    ai_parser.add_argument('--model-name', help='Custom model name')
-    
-    # Subdomain enumeration
-    subdomain_parser = subparsers.add_parser('subdomains', help='Enumerate subdomains')
-    subdomain_parser.add_argument('--domain', '-d', required=True, help='Target domain')
-    subdomain_parser.add_argument('--passive', action='store_true', 
-                                help='Passive enumeration only')
-    subdomain_parser.add_argument('--active', action='store_true', 
-                                help='Active enumeration')
-    subdomain_parser.add_argument('--wordlist', help='Custom subdomain wordlist')
-    
-    # Crawl command
-    crawl_parser = subparsers.add_parser('crawl', help='Crawl target for URLs')
-    crawl_parser.add_argument('--url', '-u', required=True, help='Target URL')
-    crawl_parser.add_argument('--depth', type=int, default=3, help='Crawl depth')
-    crawl_parser.add_argument('--scope', help='Scope regex pattern')
-    crawl_parser.add_argument('--include-js', action='store_true', 
-                            help='Include JavaScript files')
-    crawl_parser.add_argument('--forms', action='store_true', 
-                            help='Extract forms')
-    
-    # Report command
-    report_parser = subparsers.add_parser('report', help='Generate reports')
-    report_parser.add_argument('--input', '-i', required=True, 
-                             help='Input scan results file')
-    report_parser.add_argument('--template', choices=['detailed', 'executive', 'technical'],
-                             default='detailed', help='Report template')
-    
-    # Config command
-    config_parser = subparsers.add_parser('config', help='Manage configuration')
-    config_parser.add_argument('--show', action='store_true', 
-                             help='Show current configuration')
-    config_parser.add_argument('--set', nargs=2, metavar=('KEY', 'VALUE'),
-                             help='Set configuration value')
-    config_parser.add_argument('--reset', action='store_true', 
-                             help='Reset to default configuration')
-    
-    # Profile command
-    profile_parser = subparsers.add_parser('profile', help='Manage scan profiles')
-    profile_parser.add_argument('--create', help='Create new profile')
-    profile_parser.add_argument('--list', action='store_true', 
-                              help='List available profiles')
-    profile_parser.add_argument('--use', help='Use specific profile')
-    profile_parser.add_argument('--delete', help='Delete profile')
-    
-    # If no subcommand is given, check for direct URL
-    if len(sys.argv) >= 2 and sys.argv[1].startswith(('http://', 'https://')):
-        # Parse as direct URL scan
-        parser.add_argument('url', help='Target URL to scan')
+console = Console()
+
+class FalconCLI:
+    def __init__(self):
+        self.config = FalconConfig()
+        self.scanner = FalconScanner(self.config)
+        self.ai_manager = AIManager(self.config)
+        
+    def create_parser(self) -> argparse.ArgumentParser:
+        """Create the main argument parser"""
+        parser = argparse.ArgumentParser(
+            prog='falcon',
+            description='🦅 Falcon AI-Enhanced Vulnerability Scanner',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  falcon scan --url https://target.com
+  falcon scan --file targets.txt --ai-mode aggressive
+  falcon recon --domain example.com --passive
+  falcon tech --url https://app.com --detailed
+  falcon ai-train --dataset bounty-data.json
+  falcon autopilot --domain target.com --profile webapp
+            """
+        )
+        
+        # Global options
+        parser.add_argument('--version', action='version', version='Falcon 1.0.0')
+        parser.add_argument('--config', type=str, help='Custom config file path')
+        parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+        parser.add_argument('--debug', action='store_true', help='Debug mode')
+        parser.add_argument('--no-banner', action='store_true', help='Disable banner')
+        parser.add_argument('--threads', '-t', type=int, default=20, help='Number of threads')
+        parser.add_argument('--timeout', type=int, default=30, help='Request timeout in seconds')
+        
+        # Create subparsers
+        subparsers = parser.add_subparsers(dest='command', help='Available commands')
+        
+        # Scan command
+        self._add_scan_parser(subparsers)
+        
+        # Reconnaissance command
+        self._add_recon_parser(subparsers)
+        
+        # Technology detection command
+        self._add_tech_parser(subparsers)
+        
+        # AI commands
+        self._add_ai_parser(subparsers)
+        
+        # Autopilot command
+        self._add_autopilot_parser(subparsers)
+        
+        # Utility commands
+        self._add_utility_parsers(subparsers)
+        
         return parser
     
-    return parser
-
-def validate_args(args):
-    """Validate command line arguments"""
-    errors = []
+    def _add_scan_parser(self, subparsers):
+        """Add scan command parser"""
+        scan_parser = subparsers.add_parser('scan', help='Perform vulnerability scan')
+        
+        # Target options
+        target_group = scan_parser.add_mutually_exclusive_group(required=True)
+        target_group.add_argument('--url', '-u', type=str, help='Target URL')
+        target_group.add_argument('--file', '-f', type=str, help='File with target URLs')
+        target_group.add_argument('--domain', '-d', type=str, help='Target domain')
+        
+        # Scanning options
+        scan_parser.add_argument('--modules', '-m', type=str, 
+                               default='tech,crawl,params,vulns',
+                               help='Modules to run (comma-separated)')
+        scan_parser.add_argument('--depth', type=int, default=2, 
+                               help='Crawling depth')
+        scan_parser.add_argument('--profile', '-p', type=str,
+                               choices=['webapp', 'api', 'bug-bounty', 'pentest'],
+                               help='Predefined scan profile')
+        
+        # AI options
+        scan_parser.add_argument('--ai-mode', choices=['passive', 'smart', 'aggressive'],
+                               default='smart', help='AI analysis mode')
+        scan_parser.add_argument('--ai-explain', action='store_true',
+                               help='Provide AI explanations for findings')
+        scan_parser.add_argument('--ai-confidence', type=float, default=0.7,
+                               help='AI confidence threshold (0.0-1.0)')
+        
+        # Output options
+        scan_parser.add_argument('--export', type=str, help='Export formats (json,html,pdf)')
+        scan_parser.add_argument('--output', '-o', type=str, help='Output directory')
+        scan_parser.add_argument('--save-session', action='store_true',
+                               help='Save scan session for resume')
+        
+        # Advanced options
+        scan_parser.add_argument('--user-agent', type=str, help='Custom User-Agent')
+        scan_parser.add_argument('--proxy', type=str, help='Proxy URL')
+        scan_parser.add_argument('--headers', type=str, help='Custom headers (JSON)')
+        scan_parser.add_argument('--rate-limit', type=int, default=10,
+                               help='Requests per second limit')
     
-    # Validate URL format
-    if hasattr(args, 'url') and args.url:
-        if not args.url.startswith(('http://', 'https://')):
-            errors.append("URL must start with http:// or https://")
+    def _add_recon_parser(self, subparsers):
+        """Add reconnaissance command parser"""
+        recon_parser = subparsers.add_parser('recon', help='Reconnaissance and enumeration')
+        
+        recon_parser.add_argument('--domain', '-d', type=str, required=True,
+                                help='Target domain')
+        recon_parser.add_argument('--passive', action='store_true',
+                                help='Passive reconnaissance only')
+        recon_parser.add_argument('--active', action='store_true',
+                                help='Active reconnaissance')
+        recon_parser.add_argument('--subdomains', action='store_true',
+                                help='Subdomain enumeration')
+        recon_parser.add_argument('--ports', action='store_true',
+                                help='Port scanning')
+        recon_parser.add_argument('--wordlist', type=str,
+                                help='Custom wordlist for enumeration')
+        recon_parser.add_argument('--output', '-o', type=str,
+                                help='Output file for results')
     
-    # Validate file paths
-    if hasattr(args, 'wordlist') and args.wordlist:
-        if not Path(args.wordlist).exists():
-            errors.append(f"Wordlist file not found: {args.wordlist}")
+    def _add_tech_parser(self, subparsers):
+        """Add technology detection parser"""
+        tech_parser = subparsers.add_parser('tech', help='Technology detection and fingerprinting')
+        
+        target_group = tech_parser.add_mutually_exclusive_group(required=True)
+        target_group.add_argument('--url', '-u', type=str, help='Target URL')
+        target_group.add_argument('--file', '-f', type=str, help='File with URLs')
+        target_group.add_argument('--subdomains-file', type=str, help='Subdomains file')
+        
+        tech_parser.add_argument('--detailed', action='store_true',
+                               help='Detailed technology analysis')
+        tech_parser.add_argument('--cve-check', action='store_true',
+                               help='Check for known CVEs in detected technologies')
+        tech_parser.add_argument('--export', type=str, help='Export format (json,csv)')
     
-    if hasattr(args, 'config') and args.config:
-        if not Path(args.config).exists():
-            errors.append(f"Configuration file not found: {args.config}")
+    def _add_ai_parser(self, subparsers):
+        """Add AI-related command parsers"""
+        ai_parser = subparsers.add_parser('ai-train', help='Train AI models')
+        ai_parser.add_argument('--dataset', type=str, required=True,
+                             help='Training dataset file')
+        ai_parser.add_argument('--model-type', choices=['vuln-detection', 'payload-selection'],
+                             default='vuln-detection', help='Model type to train')
+        ai_parser.add_argument('--epochs', type=int, default=10, help='Training epochs')
+        
+        update_parser = subparsers.add_parser('ai-update', help='Update AI models and data')
+        update_parser.add_argument('--force', action='store_true', help='Force update')
+        update_parser.add_argument('--source', choices=['cve', 'bounty', 'all'],
+                                 default='all', help='Update source')
     
-    # Validate numeric ranges
-    if hasattr(args, 'threads') and args.threads:
-        if args.threads < 1 or args.threads > 100:
-            errors.append("Threads must be between 1 and 100")
+    def _add_autopilot_parser(self, subparsers):
+        """Add autopilot command parser"""
+        autopilot_parser = subparsers.add_parser('autopilot', 
+                                               help='Automated scanning with AI guidance')
+        
+        autopilot_parser.add_argument('--domain', '-d', type=str, required=True,
+                                    help='Target domain')
+        autopilot_parser.add_argument('--profile', choices=['webapp', 'api', 'mobile'],
+                                    default='webapp', help='Application profile')
+        autopilot_parser.add_argument('--intensity', choices=['low', 'medium', 'high'],
+                                    default='medium', help='Scan intensity')
+        autopilot_parser.add_argument('--time-limit', type=int, help='Time limit in minutes')
+        autopilot_parser.add_argument('--ai-explain', action='store_true',
+                                    help='Provide AI explanations')
+        autopilot_parser.add_argument('--continuous', action='store_true',
+                                    help='Continuous monitoring mode')
     
-    if hasattr(args, 'depth') and args.depth:
-        if args.depth < 1 or args.depth > 10:
-            errors.append("Depth must be between 1 and 10")
+    def _add_utility_parsers(self, subparsers):
+        """Add utility command parsers"""
+        # Install dependencies
+        install_parser = subparsers.add_parser('install-deps', 
+                                             help='Install required dependencies')
+        install_parser.add_argument('--tools', type=str, help='Specific tools to install')
+        
+        # Update command
+        update_parser = subparsers.add_parser('update', help='Update Falcon and tools')
+        update_parser.add_argument('--check-only', action='store_true', 
+                                 help='Check for updates only')
+        
+        # Config command
+        config_parser = subparsers.add_parser('config', help='Manage configuration')
+        config_parser.add_argument('--show', action='store_true', help='Show current config')
+        config_parser.add_argument('--reset', action='store_true', help='Reset to defaults')
+        config_parser.add_argument('--set', type=str, help='Set config value (key=value)')
     
-    if hasattr(args, 'timeout') and args.timeout:
-        if args.timeout < 1 or args.timeout > 300:
-            errors.append("Timeout must be between 1 and 300 seconds")
+    async def run(self):
+        """Main CLI execution method"""
+        parser = self.create_parser()
+        
+        if len(sys.argv) == 1:
+            if not self.config.get('cli.no_banner', False):
+                show_banner()
+            parser.print_help()
+            return
+        
+        args = parser.parse_args()
+        
+        # Show banner unless disabled
+        if not args.no_banner and not self.config.get('cli.no_banner', False):
+            show_banner()
+        
+        # Configure logging and debug mode
+        if args.debug:
+            self.config.set('logging.level', 'DEBUG')
+        elif args.verbose:
+            self.config.set('logging.level', 'INFO')
+        
+        # Route to appropriate command handler
+        try:
+            await self._route_command(args)
+        except KeyboardInterrupt:
+            console.print("\n[red]⚠️  Scan interrupted by user[/red]")
+        except Exception as e:
+            console.print(f"[red]❌ Error: {e}[/red]")
+            if args.debug:
+                import traceback
+                console.print(traceback.format_exc())
     
-    return errors
+    async def _route_command(self, args):
+        """Route commands to appropriate handlers"""
+        command_map = {
+            'scan': self._handle_scan,
+            'recon': self._handle_recon,
+            'tech': self._handle_tech,
+            'ai-train': self._handle_ai_train,
+            'ai-update': self._handle_ai_update,
+            'autopilot': self._handle_autopilot,
+            'install-deps': self._handle_install_deps,
+            'update': self._handle_update,
+            'config': self._handle_config
+        }
+        
+        handler = command_map.get(args.command)
+        if handler:
+            await handler(args)
+        else:
+            console.print(f"[red]Unknown command: {args.command}[/red]")
+    
+    async def _handle_scan(self, args):
+        """Handle scan command"""
+        console.print("[cyan]🎯 Starting vulnerability scan...[/cyan]")
+        
+        # Configure scanner with CLI arguments
+        scan_config = {
+            'modules': args.modules.split(',') if args.modules else [],
+            'depth': args.depth,
+            'ai_mode': args.ai_mode,
+            'ai_explain': args.ai_explain,
+            'ai_confidence': args.ai_confidence,
+            'threads': args.threads,
+            'timeout': args.timeout,
+            'profile': args.profile,
+            'export': args.export.split(',') if args.export else [],
+            'output': args.output,
+            'save_session': args.save_session,
+            'user_agent': args.user_agent,
+            'proxy': args.proxy,
+            'headers': args.headers,
+            'rate_limit': args.rate_limit
+        }
+        
+        # Determine target type and start scan
+        if args.url:
+            await self.scanner.scan_url(args.url, scan_config)
+        elif args.file:
+            await self.scanner.scan_file(args.file, scan_config)
+        elif args.domain:
+            await self.scanner.scan_domain(args.domain, scan_config)
+    
+    async def _handle_recon(self, args):
+        """Handle reconnaissance command"""
+        console.print("[cyan]🔍 Starting reconnaissance...[/cyan]")
+        
+        recon_config = {
+            'domain': args.domain,
+            'passive': args.passive,
+            'active': args.active,
+            'subdomains': args.subdomains,
+            'ports': args.ports,
+            'wordlist': args.wordlist,
+            'output': args.output
+        }
+        
+        from modules.recon import ReconModule
+        recon = ReconModule(self.config)
+        await recon.run(recon_config)
+    
+    async def _handle_tech(self, args):
+        """Handle technology detection command"""
+        console.print("[cyan]🔧 Detecting technologies...[/cyan]")
+        
+        tech_config = {
+            'url': args.url,
+            'file': args.file,
+            'subdomains_file': args.subdomains_file,
+            'detailed': args.detailed,
+            'cve_check': args.cve_check,
+            'export': args.export
+        }
+        
+        from modules.tech_detection import TechDetectionModule
+        tech = TechDetectionModule(self.config)
+        await tech.run(tech_config)
+    
+    async def _handle_ai_train(self, args):
+        """Handle AI training command"""
+        console.print("[cyan]🧠 Training AI models...[/cyan]")
+        
+        await self.ai_manager.train_model(
+            dataset_path=args.dataset,
+            model_type=args.model_type,
+            epochs=args.epochs
+        )
+    
+    async def _handle_ai_update(self, args):
+        """Handle AI update command"""
+        console.print("[cyan]📡 Updating AI models and data...[/cyan]")
+        
+        await self.ai_manager.update_models(
+            force=args.force,
+            source=args.source
+        )
+    
+    async def _handle_autopilot(self, args):
+        """Handle autopilot command"""
+        console.print("[cyan]🤖 Starting autopilot mode...[/cyan]")
+        
+        autopilot_config = {
+            'domain': args.domain,
+            'profile': args.profile,
+            'intensity': args.intensity,
+            'time_limit': args.time_limit,
+            'ai_explain': args.ai_explain,
+            'continuous': args.continuous
+        }
+        
+        from core.autopilot import AutopilotMode
+        autopilot = AutopilotMode(self.config, self.scanner, self.ai_manager)
+        await autopilot.run(autopilot_config)
+    
+    async def _handle_install_deps(self, args):
+        """Handle dependency installation"""
+        console.print("[cyan]📦 Installing dependencies...[/cyan]")
+        
+        from core.installer import DependencyInstaller
+        installer = DependencyInstaller()
+        await installer.install(args.tools)
+    
+    async def _handle_update(self, args):
+        """Handle update command"""
+        console.print("[cyan]⬆️  Checking for updates...[/cyan]")
+        
+        from core.updater import FalconUpdater
+        updater = FalconUpdater()
+        await updater.check_updates(check_only=args.check_only)
+    
+    async def _handle_config(self, args):
+        """Handle configuration command"""
+        if args.show:
+            self.config.show()
+        elif args.reset:
+            self.config.reset()
+            console.print("[green]✅ Configuration reset to defaults[/green]")
+        elif args.set:
+            key, value = args.set.split('=', 1)
+            self.config.set(key, value)
+            console.print(f"[green]✅ Set {key} = {value}[/green]")
