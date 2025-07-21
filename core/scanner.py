@@ -37,6 +37,9 @@ class FalconScanner:
         
     async def __aenter__(self):
         """Async context manager entry"""
+        # Initialize AI manager when event loop is running
+        await self.ai_manager.initialize()
+        
         connector = aiohttp.TCPConnector(
             limit=self.config.get('general.threads', 20),
             limit_per_host=10,
@@ -59,6 +62,11 @@ class FalconScanner:
         )
         
         return self
+    
+    async def initialize(self):
+        """Initialize scanner components manually"""
+        if not self.session:
+            await self.__aenter__()
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""

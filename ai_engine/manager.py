@@ -29,8 +29,14 @@ class AIManager:
         self.model_path = Path(config.get('ai.model_path', './ai_engine/models'))
         self.model_path.mkdir(parents=True, exist_ok=True)
         
-        # Load existing models and data
-        asyncio.create_task(self._initialize_ai_components())
+        # Flag to track if AI is initialized
+        self._initialized = False
+    
+    async def initialize(self):
+        """Initialize AI components asynchronously"""
+        if not self._initialized:
+            await self._initialize_ai_components()
+            self._initialized = True
     
     async def _initialize_ai_components(self):
         """Initialize AI components and load models"""

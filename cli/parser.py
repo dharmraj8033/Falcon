@@ -20,7 +20,8 @@ class FalconCLI:
     def __init__(self):
         self.config = FalconConfig()
         self.scanner = FalconScanner(self.config)
-        self.ai_manager = AIManager(self.config)
+        # Don't create separate AI manager, use the one from scanner
+        self.ai_manager = self.scanner.ai_manager
         
     def create_parser(self) -> argparse.ArgumentParser:
         """Create the main argument parser"""
@@ -217,6 +218,9 @@ Examples:
         elif args.verbose:
             self.config.set('logging.level', 'INFO')
         
+        # Initialize scanner before routing commands
+        await self.scanner.initialize()
+        
         # Route to appropriate command handler
         try:
             await self._route_command(args)
@@ -346,9 +350,12 @@ Examples:
             'continuous': args.continuous
         }
         
-        from core.autopilot import AutopilotMode
-        autopilot = AutopilotMode(self.config, self.scanner, self.ai_manager)
-        await autopilot.run(autopilot_config)
+        # TODO: Implement autopilot mode
+        console.print("[yellow]⚠️  Autopilot mode not yet implemented[/yellow]")
+        
+        # from core.autopilot import AutopilotMode
+        # autopilot = AutopilotMode(self.config, self.scanner, self.ai_manager)
+        # await autopilot.run(autopilot_config)
     
     async def _handle_install_deps(self, args):
         """Handle dependency installation"""
@@ -362,9 +369,12 @@ Examples:
         """Handle update command"""
         console.print("[cyan]⬆️  Checking for updates...[/cyan]")
         
-        from core.updater import FalconUpdater
-        updater = FalconUpdater()
-        await updater.check_updates(check_only=args.check_only)
+        # TODO: Implement updater
+        console.print("[yellow]⚠️  Update functionality not yet implemented[/yellow]")
+        
+        # from core.updater import FalconUpdater
+        # updater = FalconUpdater()
+        # await updater.check_updates(check_only=args.check_only)
     
     async def _handle_config(self, args):
         """Handle configuration command"""
