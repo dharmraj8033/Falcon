@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  falcon-ai:
+    build: .
+    image: falcon-ai:latest
+    container_name: falcon-scanner
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      - PYTHONPATH=/app
+      - FALCON_CONFIG_PATH=/app/config/falcon.yaml
+    networks:
+      - falcon-network
+    # Remove the default CMD to allow custom commands
+    command: ["--help"]
+    
+  # Optional: Add a database service for persistent storage
+  falcon-db:
+    image: postgres:13-alpine
+    container_name: falcon-database
+    environment:
+      - POSTGRES_DB=falcon
+      - POSTGRES_USER=falcon
+      - POSTGRES_PASSWORD=falcon_pass
+    volumes:
+      - falcon_db_data:/var/lib/postgresql/data
+    networks:
+      - falcon-network
+    ports:
+      - "5432:5432"
+
+networks:
+  falcon-network:
+    driver: bridge
+
+volumes:
+  falcon_db_data:

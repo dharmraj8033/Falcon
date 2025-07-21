@@ -1,0 +1,90 @@
+# Falcon AI Configuration
+general:
+  user_agent: 'Falcon-AI/1.0 (Security Scanner)'
+  timeout: 30
+  retries: 3
+  delay: 0
+  threads: 10
+  max_redirects: 5
+  verify_ssl: false
+
+scanning:
+  default_modules: ['xss', 'sqli', 'ssrf', 'rce']
+  crawl_depth: 3
+  forms_detection: true
+  js_analysis: true
+  parameter_discovery: true
+  autopilot: false
+  aggressive_mode: false
+
+ai_engine:
+  model_path: 'data/models/'
+  confidence_threshold: 0.7
+  learning_rate: 0.001
+  batch_size: 32
+  max_sequence_length: 512
+  enable_training: true
+  auto_update: true
+
+output:
+  default_format: 'txt'
+  color_output: true
+  verbose_level: 1
+  save_raw_responses: false
+  report_template: 'detailed'
+
+network:
+  proxy: null
+  proxy_auth: null
+  bind_address: null
+  source_port: null
+  interface: null
+
+payloads:
+  xss_payloads: 'data/payloads/xss.txt'
+  sqli_payloads: 'data/payloads/sqli.txt'
+  ssrf_payloads: 'data/payloads/ssrf.txt'
+  rce_payloads: 'data/payloads/rce.txt'
+  custom_payloads: 'data/payloads/custom/'
+  encoding_methods: ['url', 'html', 'base64', 'unicode']
+
+wordlists:
+  parameters: 'data/wordlists/parameters.txt'
+  directories: 'data/wordlists/directories.txt'
+  subdomains: 'data/wordlists/subdomains.txt'
+  files: 'data/wordlists/files.txt'
+
+tools:
+  subfinder:
+    enabled: true
+    path: '/usr/local/bin/subfinder'
+    timeout: 60
+    sources: ['crtsh', 'virustotal', 'sublist3r']
+  whatweb:
+    enabled: true
+    path: '/usr/local/bin/whatweb'
+    aggression: 3
+  arjun:
+    enabled: true
+    path: '/usr/local/bin/arjun'
+    threads: 5
+  katana:
+    enabled: true
+    path: '/usr/local/bin/katana'
+    depth: 3
+
+database:
+  engine: 'sqlite'
+  path: 'data/falcon.db'
+  host: 'localhost'
+  port: 5432
+  name: 'falcon'
+  user: 'falcon'
+  password: ''
+
+logging:
+  level: 'INFO'
+  file: 'logs/falcon.log'
+  max_size: '10MB'
+  backup_count: 5
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
