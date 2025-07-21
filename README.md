@@ -1,4 +1,9 @@
-# Falcon AI - Advanced AI-Enhanced Vulnerability Scanner
+# 🦅 Falcon AI - Advanced AI-Enhanced Vulnerability Scanner
+
+![CI Status](https://github.com/dharmraj8033/Falcon/actions/workflows/falcon-ci.yml/badge.svg)
+![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
 
 ## 🦅 Overview
 
@@ -39,7 +44,7 @@ Falcon is a powerful, production-ready CLI-based AI-enhanced vulnerability scann
 
 ### Using Git Clone (Recommended)
 ```bash
-git clone https://github.com/dharmraj8033/Falcon.git
+git clone https://github.com/falcon-security/falcon-ai.git
 cd falcon-ai
 docker build -t falcon-ai .
 docker run -it falcon-ai --help
