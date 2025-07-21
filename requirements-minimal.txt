@@ -1,6 +1,10 @@
-# Minimal requirements for basic functionality and CI testing
+# Minimal requirements for Falcon AI (CI/CD compatible)
+# Core dependencies only - fallbacks are implemented for missing packages
+
+# Essential packages
 colorama>=0.4.4
-PyYAML>=6.0
-requests>=2.28.0
-argparse
-asyncio
+aiohttp>=3.8.0
+pyyaml>=5.4.1
+
+# Optional but recommended
+requests>=2.25.0

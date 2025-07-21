@@ -39,7 +39,7 @@ Falcon is a powerful, production-ready CLI-based AI-enhanced vulnerability scann
 
 ### Using Git Clone (Recommended)
 ```bash
-git clone https://github.com/falcon-security/falcon-ai.git
+git clone https://github.com/dharmraj8033/Falcon.git
 cd falcon-ai
 docker build -t falcon-ai .
 docker run -it falcon-ai --help
