@@ -3,31 +3,10 @@ CLI Banner and Visual Elements
 """
 
 import random
+from colorama import Fore, Back, Style, init
 
-# Try to import colorama, fallback to basic colors if not available
-try:
-    from colorama import Fore, Back, Style, init
-    init(autoreset=True)
-    COLORAMA_AVAILABLE = True
-except ImportError:
-    # Fallback color codes for systems without colorama
-    class Fore:
-        CYAN = '\033[96m'
-        YELLOW = '\033[93m'
-        GREEN = '\033[92m'
-        WHITE = '\033[97m'
-        MAGENTA = '\033[95m'
-        RED = '\033[91m'
-        BLUE = '\033[94m'
-        LIGHTBLACK_EX = '\033[90m'
-    
-    class Back:
-        WHITE = '\033[107m'
-    
-    class Style:
-        RESET_ALL = '\033[0m'
-    
-    COLORAMA_AVAILABLE = False
+# Initialize colorama for Windows compatibility
+init(autoreset=True)
 
 FALCON_ASCII = """
     ███████╗ █████╗ ██╗      ██████╗ ██████╗ ███╗   ██╗    █████╗ ██╗
@@ -53,7 +32,7 @@ def print_banner():
     print(Fore.GREEN + f"    {random.choice(TAGLINES)}")
     print(Fore.YELLOW + "    " + "─" * 60)
     print(Fore.WHITE + f"    Version: 1.0.0 | AI-Enhanced Vulnerability Scanner")
-    print(Fore.MAGENTA + f"    Author: Falcon Security Team | github.com/falcon-security")
+    print(Fore.MAGENTA + f"    Author: dharmraj8033 | github.com/dharmraj8033/Falcon")
     print()
 
 def print_section_header(title, color=Fore.CYAN):

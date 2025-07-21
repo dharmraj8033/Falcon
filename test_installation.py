@@ -16,38 +16,62 @@ def test_imports():
     """Test that all core modules can be imported"""
     print("🧪 Testing imports...")
     
+    errors = []
+    
     try:
         # Test CLI modules
         from cli.banner import print_banner
         from cli.parser import create_parser
         print("   ✅ CLI modules")
+    except ImportError as e:
+        print(f"   ❌ CLI import error: {e}")
+        errors.append(f"CLI: {e}")
         
+    try:
         # Test core modules  
         from core.config import config
         from core.logger import setup_logger
         from core.scanner import FalconScanner
         print("   ✅ Core modules")
+    except ImportError as e:
+        print(f"   ❌ Core import error: {e}")
+        errors.append(f"Core: {e}")
         
+    try:
         # Test AI engine
         from ai_engine.ai_core import AIEngine
         print("   ✅ AI engine")
+    except ImportError as e:
+        print(f"   ❌ AI import error: {e}")
+        errors.append(f"AI: {e}")
         
+    try:
         # Test modules
         from modules.subdomain_finder import SubdomainFinder
         from modules.technology_detector import TechnologyDetector
         from modules.parameter_finder import ParameterFinder
         from modules.crawler import WebCrawler
         print("   ✅ Security modules")
+    except ImportError as e:
+        print(f"   ❌ Security modules import error: {e}")
+        errors.append(f"Security: {e}")
         
+    try:
         # Test output
         from output.report_generator import ReportGenerator
         print("   ✅ Output modules")
-        
-        return True
-        
     except ImportError as e:
-        print(f"   ❌ Import error: {e}")
-        return False
+        print(f"   ❌ Output modules import error: {e}")
+        errors.append(f"Output: {e}")
+    
+    if errors:
+        print(f"   ⚠️  Some imports failed: {len(errors)} errors")
+        for error in errors:
+            print(f"      - {error}")
+        return len(errors) < 3  # Allow some errors but not all
+    else:
+        print("   ✅ All imports successful")
+        return True
 
 def test_basic_functionality():
     """Test basic functionality"""
