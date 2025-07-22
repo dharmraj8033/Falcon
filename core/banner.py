@@ -36,6 +36,7 @@ def show_banner():
     banner_text = Text()
     banner_text.append(FALCON_ASCII, style="bold red")
     banner_text.append(f"\n{quote}", style="italic cyan")
+    banner_text.append(f"\nVersion 1.0.0 | Made with ❤️ by Dharm Raj", style="dim white")
     
     panel = Panel(
         banner_text,

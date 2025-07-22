@@ -245,7 +245,7 @@ MIT License - see LICENSE file for details.
 
 ## 🙏 Credits
 
-- **Author**: Falcon Security Team
+- **Author**: Dharm Raj
 - **Inspiration**: Modern security testing needs
 - **Tools**: Built with Python, AsyncIO, Rich, and AI/ML libraries
 
@@ -488,4 +488,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Made with ❤️ by the Falcon Security Team**
+**Made with ❤️ by Dharm Raj**

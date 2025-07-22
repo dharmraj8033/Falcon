@@ -3,7 +3,7 @@
 Falcon AI-Enhanced Vulnerability Scanner
 A powerful CLI-based security scanner with integrated AI intelligence
 
-Author: Falcon Security Team
+Author: Dharm Raj
 License: MIT
 """
 
