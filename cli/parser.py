@@ -231,6 +231,10 @@ Examples:
             if args.debug:
                 import traceback
                 console.print(traceback.format_exc())
+        finally:
+            # Ensure proper cleanup
+            if self.scanner.session:
+                await self.scanner.session.close()
     
     async def _route_command(self, args):
         """Route commands to appropriate handlers"""
@@ -350,8 +354,93 @@ Examples:
             'continuous': args.continuous
         }
         
-        # TODO: Implement autopilot mode
-        console.print("[yellow]⚠️  Autopilot mode not yet implemented[/yellow]")
+        console.print("[cyan]🤖 Starting autopilot mode...[/cyan]")
+        
+        # Basic autopilot implementation - progressive scanning
+        try:
+            domain = args.domain
+            
+            # Phase 1: Reconnaissance
+            console.print("[yellow]📡 Phase 1: Reconnaissance[/yellow]")
+            await self._autopilot_recon(domain)
+            
+            # Phase 2: Technology Detection
+            console.print("[yellow]🔍 Phase 2: Technology Detection[/yellow]")
+            await self._autopilot_tech_detection(domain)
+            
+            # Phase 3: Vulnerability Scanning
+            console.print("[yellow]🛡️  Phase 3: Vulnerability Scanning[/yellow]")
+            await self._autopilot_vulnerability_scan(domain, args.intensity)
+            
+            console.print("[green]✅ Autopilot scan completed successfully![/green]")
+            
+        except Exception as e:
+            console.print(f"[red]❌ Autopilot failed: {e}[/red]")
+    
+    async def _autopilot_recon(self, domain):
+        """Autopilot reconnaissance phase"""
+        from modules.recon import ReconModule
+        recon = ReconModule(self.config)
+        
+        console.print(f"[cyan]🔎 Discovering subdomains for {domain}...[/cyan]")
+        results = await recon.find_subdomains(domain, passive_only=True)
+        
+        if results:
+            console.print(f"[green]✅ Found {len(results)} subdomains[/green]")
+            for subdomain in results[:5]:  # Show first 5
+                console.print(f"  • {subdomain}")
+            if len(results) > 5:
+                console.print(f"  ... and {len(results) - 5} more")
+        else:
+            console.print("[yellow]⚠️  No subdomains found[/yellow]")
+    
+    async def _autopilot_tech_detection(self, domain):
+        """Autopilot technology detection phase"""
+        from modules.tech_detection import TechDetectionModule
+        tech_detector = TechDetectionModule(self.config)
+        
+        targets = [f"https://{domain}", f"http://{domain}"]
+        
+        for target in targets:
+            try:
+                console.print(f"[cyan]🔧 Analyzing technology stack for {target}...[/cyan]")
+                results = await tech_detector.analyze_url(target)
+                
+                if results.get('technologies'):
+                    console.print(f"[green]✅ Detected technologies on {target}[/green]")
+                    for tech in results['technologies'][:3]:  # Show first 3
+                        console.print(f"  • {tech.get('name', 'Unknown')} {tech.get('version', '')}")
+                break  # Stop after first successful detection
+            except Exception as e:
+                console.print(f"[yellow]⚠️  Could not analyze {target}: {e}[/yellow]")
+                continue
+    
+    async def _autopilot_vulnerability_scan(self, domain, intensity):
+        """Autopilot vulnerability scanning phase"""
+        from modules.vulnerability_scanner import VulnerabilityModule
+        vuln_scanner = VulnerabilityModule(self.config)
+        
+        target_url = f"https://{domain}"
+        
+        # Determine test types based on intensity
+        test_types = ['xss', 'sqli'] if intensity == 'low' else \
+                    ['xss', 'sqli', 'csrf', 'open_redirect'] if intensity == 'medium' else \
+                    ['xss', 'sqli', 'csrf', 'open_redirect', 'rce', 'ssrf', 'lfi']
+        
+        console.print(f"[cyan]🔍 Testing for vulnerabilities ({intensity} intensity)...[/cyan]")
+        
+        for test_type in test_types:
+            try:
+                console.print(f"[dim cyan]  Testing {test_type.upper()}...[/dim cyan]")
+                results = await vuln_scanner.test_vulnerability(target_url, test_type)
+                
+                if results and results.get('vulnerable', False):
+                    console.print(f"[red]🚨 {test_type.upper()} vulnerability found![/red]")
+                else:
+                    console.print(f"[green]✅ No {test_type.upper()} vulnerability detected[/green]")
+                    
+            except Exception as e:
+                console.print(f"[yellow]⚠️  {test_type.upper()} test failed: {e}[/yellow]")
         
         # from core.autopilot import AutopilotMode
         # autopilot = AutopilotMode(self.config, self.scanner, self.ai_manager)
@@ -369,12 +458,13 @@ Examples:
         """Handle update command"""
         console.print("[cyan]⬆️  Checking for updates...[/cyan]")
         
-        # TODO: Implement updater
-        console.print("[yellow]⚠️  Update functionality not yet implemented[/yellow]")
+        from core.updater import FalconUpdater
+        updater = FalconUpdater()
         
-        # from core.updater import FalconUpdater
-        # updater = FalconUpdater()
-        # await updater.check_updates(check_only=args.check_only)
+        if args.check_only:
+            await updater.check_updates(check_only=True)
+        else:
+            await updater.check_updates(check_only=False)
     
     async def _handle_config(self, args):
         """Handle configuration command"""

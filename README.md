@@ -1,6 +1,263 @@
-# Falcon AI-Enhanced Vulnerability Scanner
+# 🦅 Falcon AI-Enhanced Vulnerability Scanner
 
-![Falcon Logo](https://img.shields.io/badge/Falcon-AI%20Scanner-red?style=for-the-badge&logo=security&logoColor=white)
+A powerful, production-ready CLI-based AI-enhanced vulnerability scanner designed for web application security researchers and bug bounty hunters.
+
+## ✨ Features
+
+- 🤖 **AI-Powered Analysis** - Custom AI engine trained on real-world bug bounty data
+- 🔍 **Comprehensive Scanning** - XSS, SQLi, SSRF, RCE, LFI, CSRF detection
+- 🌐 **Technology Detection** - Advanced fingerprinting with version detection
+- 🕷️ **Intelligent Crawling** - AI-guided web crawling and discovery
+- 🔎 **Parameter Discovery** - Hidden parameter fuzzing and discovery
+- 📊 **Multiple Export Formats** - JSON, HTML, CSV, PDF, XML output
+- ⚙️ **Configurable** - YAML-based configuration with profiles
+- 🚀 **High Performance** - Async architecture for speed
+- 🛠️ **Modular Design** - Easy to extend and customize
+
+## 📥 Installation
+
+### Quick Install
+```bash
+# Clone the repository
+git clone https://github.com/dharmraj8033/Falcon.git
+cd Falcon
+
+# Windows
+.\install.bat
+
+# Linux/macOS
+chmod +x install.sh
+./install.sh
+
+# Setup global falcon command
+python setup.py
+```
+
+### Manual Install
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install Go tools (optional)
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+go install github.com/projectdiscovery/katana/cmd/katana@latest
+```
+
+## 🎯 Usage
+
+### Global Command (after setup)
+```bash
+# Help
+falcon --help
+falcon --version
+
+# Basic scanning
+falcon scan --url https://target.com
+falcon scan --domain target.com --profile webapp
+
+# Reconnaissance
+falcon recon --domain target.com --passive
+falcon recon --domain target.com --subdomains
+
+# Technology detection
+falcon tech --url https://target.com --detailed
+falcon tech --file urls.txt --cve-check
+
+# AI-powered autopilot
+falcon autopilot --domain target.com --profile webapp
+falcon autopilot --domain target.com --intensity high
+
+# Updates
+falcon update --check-only
+falcon update
+```
+
+### Direct Python Usage
+```bash
+python main.py scan --url https://target.com
+python main.py recon --domain target.com
+python main.py autopilot --domain target.com
+```
+
+## 🔧 Configuration
+
+### Config File: `config/falcon.yaml`
+```yaml
+general:
+  threads: 20
+  timeout: 30
+  user_agent: "Falcon-Scanner/1.0"
+
+ai:
+  enabled: true
+  confidence_threshold: 0.7
+  learning_mode: true
+
+modules:
+  vulnerability_scanner:
+    enabled: true
+    checks: ["xss", "sqli", "csrf", "rce", "ssrf"]
+  
+  crawling:
+    max_depth: 3
+    max_pages: 1000
+```
+
+### Profiles
+- **webapp** - Complete web application testing
+- **api** - API-focused scanning
+- **bug-bounty** - Bug bounty hunting optimized
+- **pentest** - Penetration testing mode
+
+## 📋 Commands Reference
+
+### Scan Command
+```bash
+falcon scan [options]
+  --url/-u URL          Target URL
+  --file/-f FILE        File with URLs
+  --domain/-d DOMAIN    Target domain
+  --modules/-m LIST     Modules to run
+  --profile/-p PROFILE  Scan profile
+  --ai-mode MODE        AI mode (passive/smart/aggressive)
+  --export FORMAT       Export format
+  --output/-o DIR       Output directory
+```
+
+### Recon Command
+```bash
+falcon recon [options]
+  --domain/-d DOMAIN    Target domain
+  --passive             Passive recon only
+  --active              Active recon
+  --subdomains          Subdomain enumeration
+  --ports               Port scanning
+  --wordlist FILE       Custom wordlist
+```
+
+### Tech Command
+```bash
+falcon tech [options]
+  --url/-u URL          Target URL
+  --file/-f FILE        File with URLs
+  --detailed            Detailed analysis
+  --cve-check           Check for CVEs
+```
+
+### Autopilot Command
+```bash
+falcon autopilot [options]
+  --domain/-d DOMAIN    Target domain
+  --profile PROFILE     Application profile
+  --intensity LEVEL     Scan intensity
+  --time-limit MINS     Time limit
+  --ai-explain          AI explanations
+```
+
+### AI Commands
+```bash
+falcon ai-train --dataset FILE --model-type TYPE
+falcon ai-update --source SOURCE
+```
+
+### Utility Commands
+```bash
+falcon update [--check-only]    # Update Falcon
+falcon config [--show/--reset]  # Manage config
+falcon install-deps [--tools]   # Install dependencies
+```
+
+## 🔄 Updates
+
+Keep Falcon up-to-date:
+```bash
+# Check for updates
+falcon update --check-only
+
+# Update Falcon
+falcon update
+
+# Update AI models and databases
+falcon ai-update --source all
+```
+
+## 📊 Export Formats
+
+- **JSON** - Machine-readable results
+- **HTML** - Interactive web report
+- **CSV** - Spreadsheet format
+- **PDF** - Professional report
+- **XML** - Structured data
+
+## 🤖 AI Features
+
+- **Vulnerability Classification** - AI-powered vulnerability scoring
+- **Payload Selection** - Smart payload optimization
+- **False Positive Reduction** - AI filtering of results
+- **Exploit Prediction** - Exploitability assessment
+- **Continuous Learning** - Improves with usage
+
+## 🛡️ Security Profiles
+
+### Web Application (webapp)
+- Full crawling and discovery
+- All vulnerability checks
+- Technology fingerprinting
+- Parameter discovery
+
+### API Testing (api)
+- Endpoint discovery
+- Authentication bypass
+- Rate limiting tests
+- Data validation
+
+### Bug Bounty (bug-bounty)
+- Aggressive discovery
+- Advanced payloads
+- AI-guided testing
+- Comprehensive reporting
+
+## 🏗️ Architecture
+
+```
+Falcon/
+├── main.py              # Entry point
+├── cli/                 # Command-line interface
+├── core/                # Core engine components
+├── modules/             # Security scanning modules
+├── ai_engine/           # AI intelligence system
+├── config/              # Configuration files
+└── data/                # Wordlists and payloads
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit pull request
+
+## 📜 License
+
+MIT License - see LICENSE file for details.
+
+## 🙏 Credits
+
+- **Author**: Falcon Security Team
+- **Inspiration**: Modern security testing needs
+- **Tools**: Built with Python, AsyncIO, Rich, and AI/ML libraries
+
+## 🔗 Links
+
+- **Repository**: https://github.com/dharmraj8033/Falcon
+- **Issues**: https://github.com/dharmraj8033/Falcon/issues
+- **Documentation**: https://github.com/dharmraj8033/Falcon/wiki
+
+---
+
+**⚠️ Disclaimer**: This tool is for authorized security testing only. Users are responsible for complying with applicable laws and regulations.
 
 ## 🦅 About Falcon
 
