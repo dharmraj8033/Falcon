@@ -30,6 +30,12 @@ class FalconUpdater:
         """Check for available updates"""
         console.print("[cyan]🔍 Checking for updates...[/cyan]")
         
+        # First try git-based update (most reliable)
+        git_update_result = await self._try_git_update(check_only)
+        if git_update_result:
+            return git_update_result
+        
+        # Fallback to GitHub API
         try:
             async with aiohttp.ClientSession() as session:
                 # Get latest release info
@@ -54,13 +60,133 @@ class FalconUpdater:
                                 await self.perform_update()
                         
                         return update_info
+                    elif response.status == 403:
+                        console.print("[yellow]⚠️  GitHub API rate limit reached[/yellow]")
+                        console.print("[cyan]💡 Try using: git pull origin main[/cyan]")
+                        return await self._fallback_git_check()
                     else:
-                        console.print("[yellow]⚠️  Could not check for updates (GitHub API limit?)[/yellow]")
-                        return {}
+                        console.print(f"[yellow]⚠️  Could not check for updates (HTTP {response.status})[/yellow]")
+                        return await self._fallback_git_check()
                         
         except Exception as e:
-            console.print(f"[red]❌ Update check failed: {e}[/red]")
+            console.print(f"[yellow]⚠️  Update check failed: {e}[/yellow]")
+            return await self._fallback_git_check()
+    
+    async def _try_git_update(self, check_only: bool = False) -> Dict[str, Any]:
+        """Try to update using git commands"""
+        try:
+            # Check if we're in a git repository
+            result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                cwd=self.falcon_dir,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                return {}  # Not a git repo, fallback to API
+            
+            # Check for remote updates
+            subprocess.run(
+                ['git', 'fetch', 'origin'],
+                cwd=self.falcon_dir,
+                capture_output=True,
+                text=True
+            )
+            
+            # Check if updates are available
+            result = subprocess.run(
+                ['git', 'rev-list', '--count', 'HEAD..origin/main'],
+                cwd=self.falcon_dir,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                commits_behind = int(result.stdout.strip())
+                
+                if commits_behind > 0:
+                    console.print(f"[green]🎉 {commits_behind} new commits available![/green]")
+                    
+                    if not check_only:
+                        if self._prompt_user_update():
+                            return await self._perform_git_update()
+                    
+                    return {
+                        'current_version': self.current_version,
+                        'commits_behind': commits_behind,
+                        'update_available': True,
+                        'method': 'git'
+                    }
+                else:
+                    console.print("[green]✅ Falcon is up to date![/green]")
+                    return {
+                        'current_version': self.current_version,
+                        'update_available': False,
+                        'method': 'git'
+                    }
+            
+        except FileNotFoundError:
+            # Git not available
             return {}
+        except Exception as e:
+            console.print(f"[yellow]⚠️  Git check failed: {e}[/yellow]")
+            return {}
+        
+        return {}
+    
+    async def _fallback_git_check(self) -> Dict[str, Any]:
+        """Fallback to manual git instructions"""
+        console.print("[cyan]📋 Manual update instructions:[/cyan]")
+        console.print("   1. cd Falcon")
+        console.print("   2. git pull origin main")
+        console.print("   3. pip install -r requirements.txt")
+        
+        return {
+            'current_version': self.current_version,
+            'update_available': 'unknown',
+            'method': 'manual'
+        }
+    
+    async def _perform_git_update(self) -> Dict[str, Any]:
+        """Perform git-based update"""
+        console.print("[cyan]🚀 Updating Falcon...[/cyan]")
+        
+        try:
+            # Pull latest changes
+            result = subprocess.run(
+                ['git', 'pull', 'origin', 'main'],
+                cwd=self.falcon_dir,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                console.print("[green]✅ Successfully updated Falcon![/green]")
+                
+                # Update dependencies
+                console.print("[cyan]📦 Updating dependencies...[/cyan]")
+                dep_result = subprocess.run(
+                    [sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'],
+                    cwd=self.falcon_dir,
+                    capture_output=True,
+                    text=True
+                )
+                
+                if dep_result.returncode == 0:
+                    console.print("[green]✅ Dependencies updated![/green]")
+                else:
+                    console.print("[yellow]⚠️  Some dependencies may need manual update[/yellow]")
+                
+                console.print("[green]🎉 Update completed successfully![/green]")
+                return {'success': True, 'method': 'git'}
+            else:
+                console.print(f"[red]❌ Update failed: {result.stderr}[/red]")
+                return {'success': False, 'method': 'git', 'error': result.stderr}
+                
+        except Exception as e:
+            console.print(f"[red]❌ Update failed: {e}[/red]")
+            return {'success': False, 'method': 'git', 'error': str(e)}
     
     def _compare_versions(self, version1: str, version2: str) -> bool:
         """Compare two version strings"""
